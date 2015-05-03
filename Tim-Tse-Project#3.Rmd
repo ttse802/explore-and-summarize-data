@@ -1,0 +1,206 @@
+---
+title: "Red Wine Exploration by Tim Tse"
+author: "Tim Tse"
+date: "Sunday, May 3, 2015"
+output: html_document
+---
+
+#Introduction
+
+In this report, we have 11 input variables and 1 output variable.  The goal of the assignment is to use Data analysis tools in R to identify which chemical properties influence the quality of red wines.  
+
+#Dataset Structure
+The data-set we used contains 1,599 red wines samples and at least 3 wine experts rated the quality of each wine.  Quality rating is between 0 (very bad)and 10 (very excellent).
+
+   Input variables (based on physicochemical tests):
+   
+   1 - fixed acidity (tartaric acid - g / dm^3)
+   
+   2 - volatile acidity (acetic acid - g / dm^3)
+   
+   3 - citric acid (g / dm^3)
+   
+   4 - residual sugar (g / dm^3)
+   
+   5 - chlorides (sodium chloride - g / dm^3)
+   
+   6 - free sulfur dioxide (mg / dm^3)
+   
+   7 - total sulfur dioxide (mg / dm^3)
+   
+   8 - density (g / cm^3)
+   
+   9 - pH
+   
+   10 - sulfates (potassium sulfate - g / dm3)
+   
+   11 - alcohol (% by volume)
+    
+   Output variable (based on sensory data): 
+   
+   12 - quality (score between 0 and 10)
+   
+#What is the main feature of interest in your dataset?
+
+The main interest is to find out what chemical properties have the most positive and negative influence on the red wine quality.  From red wine experts, a good quality red wine is one that has a good balance of all chemical.  However, we would like to investigate this data-set and observe how the chemicals in the red wine data-set samples actually affected the quality rating.
+
+
+#Dataset Summary
+```{r}
+library(ggplot2)
+library(gridExtra)
+library(GGally)
+library(car)
+```{r}
+wine <- read.csv('C:\\wineQualityReds.csv')
+
+#Data-set variables
+names(wine)
+```
+
+```{r}
+#Dimension of the data-set
+dim(wine)
+```
+
+```{r}
+#Summary of the dat-aset
+summary(wine)
+```
+#Observations from dataset
+- Quality is range from 3 to 8.  Median is 6 with a mean of 5.636.
+
+- Total sulfur dioxide and free sulfur dioxide has a very big range in the data-set.  
+
+- Alcohol level is range from 8.4% to 14.9% with a 10.2% median.
+
+- pH value has a very small range.  From 2.740 to 4.01, median and mean are both 3.31.
+
+- Residual sugar also has a big range from 0.9 g/dm^3 to 15.5 g/dm^3.
+
+#Key parameters distribution 
+(Residual sugar, Free SO2, Total SO2, Alcohol, pH, and Quality)
+```{r, echo=FALSE}
+p1<-ggplot(aes(x=residual.sugar),
+       data = wine)+
+   geom_histogram(color =I('black'),fill = I('#099009'))+
+  ggtitle('Residual sugar distribution')
+p2<-ggplot(aes(x=free.sulfur.dioxide),
+       data = wine)+
+   geom_histogram(color =I('black'),fill = I('#099009'))+
+  ggtitle('Free SO2 distribution')
+p3<-ggplot(aes(x=total.sulfur.dioxide),
+       data = wine)+
+   geom_histogram(color =I('black'),fill = I('#099009'))+
+  ggtitle('Total SO2 distribution')
+p4<-ggplot(aes(x=alcohol),
+       data = wine)+
+   geom_histogram(color =I('black'),fill = I('#099009'))+
+  ggtitle('Alcohol distribution')
+p5<-ggplot(aes(x=pH),
+       data = wine)+
+   geom_histogram(color =I('black'),fill = I('#099009'))+
+  ggtitle('pH distribution')
+p6<-ggplot(aes(x=quality),
+       data = wine)+
+   geom_histogram(color =I('black'),fill = I('#099009'))+
+  ggtitle('Quality distribution')
+  
+grid.arrange(p1,p2,p3,p4,p5,p6)
+```
+
+Observation from plots
+
+1) Residual sugar plot seems normal distributed.  It has a long tail which goes beyond 15.  The median of the plot is at 2.2.  Major samples resides in values between 1 to 3.
+
+2) The free SO2 plot has a right skewed distribution. Most popular SO2 level is around 7-8 mg / dm^3.  Typical So2 values are below 40 mg/dm^3 with max at 72 mg/dm^3.
+
+3) The total SO2 plot has a right skewed distribution. Most popular count is around 10-25 mg / dm^3.  Typical values are below 150 mg/dm^3 with max at 289 mg/dm^3.
+
+4) The alcohol plot has a right skewed distribution. Most popular count is at 9.6%-9.7%.  Typical alcohol levels are between 9% to 13% with min at 8.4% and max at 14.9%.
+
+5) The pH value plot display a normal distribution with major samples values lie between 3.0 and 3.5 with median at 3.31.
+
+6) The Quality plot is a normal distribution.  Most red wine are between 4 to 7.  Quality 5 and 6 are most popular.
+
+#Red Wine Quality Boxplot
+```{r}
+boxplot(wine$quality,
+        ylab = 'Red Wine Quality',
+        main = 'Red Wine Quality Boxplot',
+        col = c('red'))
+```
+
+- The box-plot confirms the quality distribution that most red wine are between 4 to 7 with 5 and 6 being the most popular.
+
+#Scatter-plot matrices
+```{r, echo=FALSE}
+
+scatterplotMatrix(wine[2:13])
+
+```
+
+- From the Scatter-plot Matrices , we can see visually how each of the input variable has an effect on the quality of the wine.  One of the most obvious observation is a negative relationship between volatile acidity to quality.  On the other hand, alcohol level has a positive relationship with quality.  The other input variables seems to be flat with small relationship with quality.
+
+#Identifying Correlation with Quality
+```{r, echo=FALSE}
+#ggpair with all variables
+ggpairs(wine[2:13])
+
+#ggpair with fixed acidity, volatile acidity, citric acid residual sugar and quality
+pair_1 <- wine[,2:5]
+pair_1$quality <- wine$quality
+ggpairs(pair_1)
+
+#ggpair with chlorides, free sulfur dioxide, sulfur dioxide, density, and quality
+pair_2 <- wine[,6:9]
+pair_2$quality <- wine$quality
+ggpairs(pair_2)
+
+#ggpair with pH, sulphates, alcohol, and quality
+pair_3 <- wine[,10:12]
+pair_3$quality <- wine$quality
+ggpairs(pair_3)
+```
+
+- From the ggpair plots, we can see the correlation between each input variables in pairing with quality.  I break down the first plot into three different smaller ggpair plots to get a clearer comparison.  In this exercise, we can confirm that volatile acidity has a strong negative correlation of -0.391 to quality, and alcohol level has a strong positive correlation of .476 to quality. Since alcohol and volatile acidity have a strong effect on the quality.  We can focus on these two areas and do further analysis.
+
+#Final Plots
+```{r, echo=FALSE}
+#Plotting Alcohol VS. Volatile Acidity in Quality Relationship
+ ggplot(aes(x=alcohol, y=volatile.acidity),data = wine) + 
+  geom_line()+
+  facet_wrap(~quality)+
+   ggtitle('Alcohol VS. Volatile Acidity in Quality Relationship')
+```
+
+- In this plot, we can see that red wine with quality of 3 has relatively high volatile acidity and low alcohol level.  As the quality improves, the data moves towards lower volatile acidity and higher alcohol level.  We do not see a strong relationship between alcohol and volatile acidity.
+
+
+```{r, echo=FALSE}
+#Plotting Alcohol VS. pH in Quality Relationship
+ ggplot(aes(x=alcohol, y=pH),data = wine) + 
+  geom_point(aes(color = quality), alpha = 1/2, position = 'jitter')+
+   ggtitle('Alcohol VS. pH in Quality Relationship')
+```
+
+- In this plot, we do not see a strong correlation between alcohol and pH level.  Also, pH level does not seem to have a big impact on the quality of red wine.
+
+
+```{r, echo=FALSE}
+#Plotting Volatile Acidity VS. Citric acid in Quality Relationship
+ ggplot(aes(x=volatile.acidity, y=density),data = wine) + 
+  geom_point(alpha = 1/2)+
+  facet_wrap(~quality)+
+   ggtitle('Volatile Acidity VS. density in Quality Relationship')
+
+```
+
+- In this plot, we do not see much correlation between volatile acidity and density.  However, we do see a slight correlation between density and quality.  As we can see that density decrease, the quality slightly increases.
+
+
+#Reflection
+
+The red wine data-set contains 1599 with 11 input chemical variables and 1 output quality ranking variable.  I started by understanding the individual variables in the data set, and then I further explored interesting observation using various types of plots including box-plot, histograms, scatter-plot matrices, and ggpair plots.  In my exploration, I found that most input variables do not have a direct strong correlation with quality, but alcohol level is one variable with a strong positive correlation to the quality ranking, and volatile acidity one variable with a strong negative correlation.  In my next exploration, I found that pH does not have a strong correlation with alcohol and quality, but density does has a slight correlation with quality.  
+
+Given that some this data-set quality ranking came from only 3 wine experts, I am not very convinced that we can draw into conclusion that increasing alcohol or decreasing volatile acidity will give wine better quality ranking.  The standards of performance that wine experts use to judge wine quality include balance, length, depth, complexity, finish, and typicity.  The details of each of the quality variables can be found in (http://www.dummies.com/how-to/content/how-to-discern-wine-quality.html).   To further enhance the analysis, I believe the wine experts should include this information when they are giving the quality ranking to this data-set.
